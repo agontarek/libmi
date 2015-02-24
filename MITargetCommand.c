@@ -40,3 +40,11 @@ MITargetDetach(int pgid)
 	return cmd;
 }
 
+MICommand *
+MITargetDetachAll(void)
+{
+	MICommand *	cmd = MICommandNew("-target-detach",MIResultRecordDONE);
+	
+	return cmd;
+}
+

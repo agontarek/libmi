@@ -81,6 +81,8 @@ struct MIBreakpoint {
 	char *	what;
 	char *	threadId;
 	int		ignore;
+	int		hasMultiple;
+	char *	origLoc;
 
 	int		isWpt;
 	int		isAWpt;

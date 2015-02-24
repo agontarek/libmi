@@ -94,6 +94,8 @@ extern MICommand *MIExecFinish(void);
 extern MICommand *MIExecInterrupt(void);
 extern MICommand *MIExecUtil(char*);
 extern MICommand *MIExecStepInstruction(void);
+extern MICommand *MIExecContinueAll(void);
+extern MICommand *MIExecInterruptAll(void);
 
 /*
  * -file-* commands
@@ -154,6 +156,7 @@ extern MICommand *MIThreadSelect(int threadNum);
  */
 extern MICommand *MITargetAttach(int pgid);
 extern MICommand *MITargetDetach(int pgid);
+extern MICommand *MITargetDetachAll(void);
 
 /*
  * -data-* commands

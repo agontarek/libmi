@@ -39,6 +39,7 @@ struct MISession {
 	MICommand *		command;
 	MIList *		send_queue;
 	char *			gdb_path;
+	char *			data_directory;
 	struct timeval	select_timeout;
 	void			(*event_callback)(MIEvent *);
 	void			(*cmd_callback)(MIResultRecord *);
@@ -65,6 +66,7 @@ extern void MISessionRegisterConsoleCallback(MISession *sess, void (*callback)(c
 extern void MISessionRegisterLogCallback(MISession *sess, void (*callback)(char *));
 extern void MISessionRegisterTargetCallback(MISession *sess, void (*callback)(char *));
 extern void MISessionSetGDBPath(MISession *sess, char *path);
+extern void MISessionSetGDBDataDirectory(MISession *sess, char *path);
 extern int MISessionSendCommand(MISession *sess, MICommand *cmd);
 extern void MISessionProcessCommandsAndResponses(MISession *sess, fd_set *rfds, fd_set *wfds);
 extern void MISessionGetFds(MISession *sess, int *nfds, fd_set *rfds, fd_set *wfds, fd_set *efds);

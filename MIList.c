@@ -210,14 +210,13 @@ MIListRemoveFirst(MIList *l)
 {
 	void *			v;
 	MIListElement *	e;
-	MIListElement *	ep;
 
 
 	if ( l == (MIList *)NULL || l->l_nel == 0 ) {
 		return (void *)NULL;
 	}
 
-	ep = e = l->l_head;
+	e = l->l_head;
 
 	if ( l->l_scan == e )
 		l->l_scan = e->l_next;

@@ -106,3 +106,21 @@ MIPidInfo(void)
 	return MICommandNew("-pid-info", MIResultRecordDONE);
 }
 #endif /* __APPLE__ */
+
+// Thread variants
+
+MICommand *
+MIExecContinueAll(void)
+{
+	MICommand *	cmd = MICommandNew("-exec-continue", MIResultRecordRUNNING);
+	MICommandAddOption(cmd, "--all", NULL);
+	return cmd;
+}
+
+MICommand *
+MIExecInterruptAll(void)
+{
+	MICommand *	cmd = MICommandNew("-exec-interrupt", MIResultRecordDONE);
+	MICommandAddOption(cmd, "--all", NULL);
+	return cmd;
+}

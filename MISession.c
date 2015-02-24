@@ -24,6 +24,7 @@
 #include	<config.h>
 #endif /* HAVE_CONFIG_H */
 
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/errno.h>
@@ -45,8 +46,8 @@
 #include "MIResult.h"
 
 static MIList *			MISessionList = NULL;
-static struct timeval		MISessionDefaultSelectTimeout = {0, 1000};
-static int			MISessionDebug = 1;
+static struct timeval	MISessionDefaultSelectTimeout = {0, 1000};
+static int				MISessionDebug = 0;
 
 static void DoOOBCallbacks(MISession *sess, MIList *oobs);
 //static void HandleChild(int sig);
@@ -74,6 +75,7 @@ MISessionNew(void)
 	sess->command = NULL;
 	sess->send_queue = MIListNew();
 	sess->gdb_path = NULL;
+	sess->data_directory = NULL;
 	sess->event_callback = NULL;
 	sess->cmd_callback = NULL;
 	sess->exec_callback = NULL;
@@ -98,6 +100,10 @@ MISessionFree(MISession *sess)
 	if (sess->gdb_path != NULL)
 	{
 		free(sess->gdb_path);
+	}
+	if (sess->data_directory != NULL)
+	{
+		free(sess->data_directory);
 	}
 	free(sess);
 }
@@ -142,11 +148,18 @@ MISessionStartLocal(MISession *sess, char *prog)
 	int			p1[2];
 	int			p2[2];
 	char *		name;
+	char *		data_dir = NULL;
 	
 	// ensure that a gdb_path is set in session, otherwise default to gdb
 	if (sess->gdb_path == NULL)
 	{
 		sess->gdb_path = strdup("gdb");
+	}
+	
+	// create optional data_dir argument
+	if (sess->data_directory != NULL)
+	{
+		asprintf(&data_dir, "--data-directory=%s", sess->data_directory);
 	}
 	
 	if (pipe(p1) < 0 || pipe(p2) < 0) {
@@ -183,6 +196,9 @@ MISessionStartLocal(MISession *sess, char *prog)
 	switch (sess->pid = fork())
 	{
 	case 0:
+		// set parent death signal to send SIGTERM
+		prctl(PR_SET_PDEATHSIG, SIGTERM);
+	
 		dup2(p2[0], 0);
 		dup2(p1[1], 1);
 		close(p1[0]);
@@ -190,23 +206,17 @@ MISessionStartLocal(MISession *sess, char *prog)
 		close(p2[0]);
 		close(p2[1]);
 		
-		if (prog == NULL)
-		{
-			/*execlp("strace", "strace", "-q", "-r", "-t", "-T", "-v", "-o", "/lus/scratch/andrewg/strace/strace.out",
-				sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", NULL);
-			execlp("valgrind", "valgrind", "--quiet", "--tool=callgrind",
-				"--callgrind-out-file=/lus/scratch/andrewg/callgrind_results/callgrind.out.%p", 
-				"--combine-dumps=yes", "--collect-bus=yes", "--collect-systime=yes", 
-				sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", NULL);
-			execlp("valgrind", "valgrind", "--quiet", "--track-fds=yes", 
-				"--log-file=/lus/scratch/andrewg/valgrind/valgrind.out.%p",
-				"--read-var-info=yes", "--track-origins=yes", "--error-limit=no",
-				sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", NULL);*/
-			execlp(sess->gdb_path, sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", NULL);
-		} else
-		{
-			execlp(sess->gdb_path, sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", prog, NULL);
-		}
+		/*execlp("strace", "strace", "-q", "-r", "-t", "-T", "-v", "-o", "/lus/scratch/andrewg/strace/strace.out",
+			sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", data_dir ? data_dir:prog, prog, NULL);
+		execlp("valgrind", "valgrind", "--quiet", "--tool=callgrind",
+			"--callgrind-out-file=/lus/scratch/andrewg/callgrind_results/callgrind.out.%p", 
+			"--combine-dumps=yes", "--collect-bus=yes", "--collect-systime=yes", 
+			sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", data_dir ? data_dir:prog, prog, NULL);
+		execlp("valgrind", "valgrind", "--quiet", "--track-fds=yes", 
+			"--log-file=/lus/scratch/andrewg/valgrind/valgrind.out.%p",
+			"--read-var-info=yes", "--track-origins=yes", "--error-limit=no",
+			sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", data_dir ? data_dir:prog, prog, NULL);*/
+		execlp(sess->gdb_path, sess->gdb_path, "-q", "-nx", "-nw", "-i", "mi", data_dir ? data_dir:prog, prog, NULL);
 		
 		exit(1);
 	
@@ -280,6 +290,14 @@ MISessionSetGDBPath(MISession *sess, char *path)
 	if (sess->gdb_path != NULL)
 		free(sess->gdb_path);
 	sess->gdb_path = strdup(path);
+}
+
+void
+MISessionSetGDBDataDirectory(MISession *sess, char *path)
+{
+	if (sess->data_directory != NULL)
+		free(sess->data_directory);
+	sess->data_directory = strdup(path);
 }
 
 /*

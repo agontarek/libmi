@@ -49,6 +49,7 @@ MIBreakpointNew(void)
 	bp->line = 0;
 	bp->times = 0;
 	bp->ignore = 0;
+	bp->hasMultiple = 0;
 	bp->isWpt = 0;
 	bp->isAWpt = 0;
 	bp->isRWpt = 0;
@@ -62,6 +63,7 @@ MIBreakpointNew(void)
 	bp->cond = NULL;
 	bp->what = NULL;
 	bp->threadId = NULL;
+	bp->origLoc = NULL;
 	return bp;
 }
 
@@ -84,6 +86,8 @@ MIBreakpointFree(MIBreakpoint *bp)
 		free(bp->what);
 	if (bp->threadId != NULL)
 		free(bp->threadId);
+	if (bp->origLoc != NULL)
+		free(bp->origLoc);
 	free(bp);
 }
 
@@ -138,6 +142,7 @@ MIBreakpointParse(MIValue *tuple)
 		} else if (strcmp(var, "enabled") == 0) {
 			bp->enabled = strcmp(str, "y") == 0;
 		} else if (strcmp(var, "addr") == 0) {
+			bp->hasMultiple = strcmp(str, "<MULTIPLE>") == 0;
 			bp->address = strdup(str);
 		} else if (strcmp(var, "func") == 0) {
 			bp->func = strdup(str);
@@ -155,6 +160,8 @@ MIBreakpointParse(MIValue *tuple)
 			bp->ignore = (int)strtol(str, NULL, 10);
 		} else if (strcmp(var, "cond") == 0) {
 			bp->cond = strdup(str);
+		} else if (strcmp(var, "original-location") == 0) {
+			bp->origLoc = strdup(str);
 		}
 	}
 	
